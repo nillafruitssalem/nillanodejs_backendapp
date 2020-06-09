@@ -182,7 +182,7 @@ app.get("/allproduct/:pid", (req, res) => {
 
 // add order
 app.post("/addorder/:pid", (req, res) => {
-    console.log(req.body)
+    // console.log(req.body)
     productschema.findOne({ "productid": req.params.pid }).then(result => {
         console.log("reuslt order", result)
         if (result.productqty == 0) {
@@ -268,7 +268,7 @@ app.get("/orderhistory/:userid", (req, res) => {
 // cancel order
 app.post("/cancelorder/:pid", (req, res) => {
     orderschema.findOne({ "userid": req.body.userid, "productid": req.params.pid }).then(result => {
-        console.log(result)
+        // console.log(result)
         if (result == null) {
             res.json({ "status": false, "msg": "You dont have this product" });
             res.end();
