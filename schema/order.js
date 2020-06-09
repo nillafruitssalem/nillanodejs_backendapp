@@ -10,6 +10,9 @@ var orderdetails = new mongoose.Schema({
         type: String,
         required: true        
     },
+    productid: {
+        type: String        
+    },
     orderhistory: {
         type: Boolean,        
         required: true

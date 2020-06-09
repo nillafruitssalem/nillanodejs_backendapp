@@ -203,7 +203,8 @@ app.post("/addorder/:pid", (req, res) => {
 
                         order = new orderschema({
                             userid: req.body.userid,
-                            orderid:(req.body.userid).substring(0,6) + Date.now(),
+                            orderid: (req.body.userid).substring(0, 6) + Date.now(),
+                            productid: req.params.pid,
                             orderhistory: req.body.orderhistory,
                             orderproductname: result.productname,
                             orderproductrate: result.productrate,
@@ -235,7 +236,7 @@ app.post("/addorder/:pid", (req, res) => {
 })
 // specified user oder
 app.get("/orderdetails/:userid", (req, res) => {
-    orderschema.find({ "userid": req.params.userid ,"orderhistory":false})
+    orderschema.find({ "userid": req.params.userid, "orderhistory": false })
         .then(result => {
             if (result == null) {
                 res.json({ "status": true, "msg": "No Record found" });
@@ -250,7 +251,7 @@ app.get("/orderdetails/:userid", (req, res) => {
         })
 })
 app.get("/orderhistory/:userid", (req, res) => {
-    orderschema.find({ "userid": req.params.userid ,"orderhistory":true})
+    orderschema.find({ "userid": req.params.userid, "orderhistory": true })
         .then(result => {
             if (result == null) {
                 res.json({ "status": true, "msg": "No Record found" });
@@ -263,6 +264,57 @@ app.get("/orderhistory/:userid", (req, res) => {
             res.json({ "status": false, "msg": "No Record from all products ", "Error": e });
             res.end();
         })
+})
+// cancel order
+app.post("/cancelorder/:pid", (req, res) => {
+    orderschema.findOne({ "userid": req.body.userid, "productid": req.params.pid }).then(result => {
+        console.log(result)
+        if (result == null) {
+            res.json({ "status": false, "msg": "You dont have this product" });
+            res.end();
+            return;
+        } else {
+            productschema.findOne({ "productid": req.params.pid }).then(result => {
+                console.log("reuslt order", result)
+                if (result.productqty == 0) {
+                    res.json({ "status": false, "msg": "out of stock please update product quatity" });
+                    res.end();
+                }
+                else {
+                    if (result.productqty >= req.body.orderqty) {
+                        totalqty = 0;
+                        totalqty = result.productqty + req.body.orderqty
+                        console.log(totalqty)
+        
+                        productschema.findOneAndUpdate(
+                            { "productid": result.productid },
+                            { "productqty": totalqty })
+                            .then(result => {
+                                console.log(result)
+                                orderschema.findOneAndDelete({ "userid": req.body.userid, "productid": req.params.pid }).then(result => {
+                                    res.json({ "status": true, "msg": "Order cancelled  Success" });
+                                    res.end();
+                                }).catch(e => {
+                                    res.json({ "status": false, "msg": "Error on cancel order", "Error": e });
+                                    res.end();
+                                })
+                            }).catch(e => {
+                                console.log(e)
+                                res.json({ "status": false, "msg": "Error on cancel order", "Error": e });
+                                res.end();
+                            })
+                    }
+                    if (result.productqty < req.body.orderqty) {
+                        res.json({ "status": false, "msg": "sorry we dont have higher quatity" });
+                        res.end();
+                    }
+                }
+            })
+        }
+    }).catch(e => {
+        res.json({ "status": false, "msg": "Error on cancel order", "Error": e });
+        res.end();
+    })
 })
 app.post("/sendmail", (req, res) => {
 
