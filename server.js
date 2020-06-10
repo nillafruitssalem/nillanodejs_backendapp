@@ -17,6 +17,7 @@ const hbs = require("nodemailer-express-handlebars");
 const mongoose = require("mongoose");
 const userschema = require("./schema/user.js")
 const productschema = require("./schema/product.js")
+const measureschema = require("./schema/measureunits.js")
 const orderschema = require("./schema/order.js")
 app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({ extended: true }));
@@ -109,41 +110,94 @@ app.get("/allproduct", (req, res) => {
 })
 
 // add Product
-app.post("/addproduct", (req, res) => {
-    prod = new productschema({
-        productid: (req.body.productname).substring(0, 3) + Date.now(),
-        productname: req.body.productname,
-        productrate: req.body.productrate,
-        productqty: req.body.productqty,
-        productimage: req.body.productimage
-    })
-    prod.save().then(result => {
-        res.json({ "status": true, "msg": "Record Insertion Success" });
+app.post("/addproduct", upload.single('file'), (req, res) => {
+    let myarray = [];
+    myarray.push(JSON.parse(req.body.pdata));
+    if (!req.file) {
+        res.status(500);
+        res.json('file not found');
         res.end();
-    }).catch(e => {
-        console.log(e)
-        res.json({ "status": false, "msg": "Record Insertion UnSuccess", "Error": e });
-        res.end();
+        return;
+    }
+    cloudinary.uploader.upload(req.file.path, (err, data) => {
+        if (err) {
+            console.log("err on cloudinary", err)
+            res.end();
+            return;
+        }
+        if (data) {
+            prod = new productschema({
+                productid: (myarray[0].productname).substring(0, 3) + Date.now(),
+                productname: myarray[0].productname,
+                productrate: myarray[0].productrate,
+                productqty: myarray[0].productqty,
+                productunits: myarray[0].productunits,
+                productimage: data["secure_url"],
+                productimgdet: data
+            })
+            prod.save().then(result => {
+                res.json({ "status": true, "msg": "Record Insertion Success" });
+                res.end();
+            }).catch(e => {
+                console.log(e)
+                res.json({ "status": false, "msg": "Record Insertion UnSuccess", "Error": e });
+                res.end();
+                return;
+            })
+        }
     })
+
 })
 
 // update Product
-app.put("/updateproduct/:pid", (req, res) => {
-    productschema.findOneAndUpdate(
-        { "productid": req.params.pid },
-        {
-            "productname": req.body.productname,
-            "productrate": req.body.productrate,
-            "productqty": req.body.productqty,
-            // "prductimage": (myarray[0].pname).substring(0, 3) + req.file.originalname
-        }).then(result => {
-            res.json({ "status": true, "msg": "Record Updated Success" });
-            res.end();
-        }).catch(e => {
-            console.log(e)
-            res.json({ "status": false, "msg": "Record Updated UnSuccess", "Error": e });
-            res.end();
+app.put("/updateproduct/:pid", upload.single('file'), (req, res) => {
+    let myarray = [];
+    myarray.push(JSON.parse(req.body.pdata));
+    console.log("updateproduct",JSON.parse(req.body.pdata))
+    if (!req.file) {
+        productschema.findOneAndUpdate(
+            { "productid": req.params.pid },
+            {
+                "productname": myarray[0].productname,
+                "productrate": myarray[0].productrate,
+                "productqty": myarray[0].productqty,
+                "productunits": myarray[0].productunits
+            }).then(result => {
+                res.json({ "status": true, "msg": "Record Updated Success" });
+                res.end();
+            }).catch(e => {
+                console.log(e)
+                res.json({ "status": false, "msg": "Record Updated UnSuccess", "Error": e });
+                res.end();
+            })
+    }
+    if (req.file) {
+        cloudinary.uploader.upload(req.file.path, (err, data) => {
+            if (err) {
+                res.json({ "status": false, "msg": "Error on Cloudinary" });
+                res.end();
+            }
+            if (data) {
+                productschema.findOneAndUpdate(
+                    { "productid": req.params.pid },
+                    {
+                        "productname": myarray[0].productname,
+                        "productrate": myarray[0].productrate,
+                        "productqty": myarray[0].productqty,
+                        "productunits": myarray[0].productunits,
+                        "productimage": data["secure_url"],
+                        "productimgdet": data
+                    }).then(result => {
+                        res.json({ "status": true, "msg": "Record Updated Success" });
+                        res.end();
+                    }).catch(e => {
+                        console.log(e)
+                        res.json({ "status": false, "msg": "Record Updated UnSuccess", "Error": e });
+                        res.end();
+                    })
+            }
         })
+    }
 })
 
 // delete Product
@@ -285,7 +339,7 @@ app.post("/cancelorder/:pid", (req, res) => {
                         totalqty = 0;
                         totalqty = result.productqty + req.body.orderqty
                         console.log(totalqty)
-        
+
                         productschema.findOneAndUpdate(
                             { "productid": result.productid },
                             { "productqty": totalqty })
@@ -357,6 +411,49 @@ app.post("/sendmail", (req, res) => {
             console.log("Email send", result)
         }
     })
+})
+// add measure units
+app.post("/addmeasure", (req, res) => {
+    units = new measureschema({
+        unitsid: (req.body.units).substring(0, 2) + Date.now(),
+        units: req.body.units
+    })
+    units.save().then(result => {
+        res.json({ "status": true, "msg": "Record Insertion Success" });
+        res.end();
+    }).catch(e => {
+        console.log(e)
+        res.json({ "status": false, "msg": "Record Insertion UnSuccess", "Error": e });
+        res.end();
+    })
+})
+// all measure units
+app.get("/allmeasure", (req, res) => {
+    measureschema.find({}).then(result => {
+        res.json({ "status": true, "Data": result });
+        res.end();
+    }).catch(e => {
+        console.log(e)
+        res.json({ "status": false, "Error": e });
+        res.end();
+    })
+})
+
+// delete measure units
+app.delete("/deletemeasure/:unitsid", (req, res) => {
+    measureschema.findOneAndDelete(
+        { "unitsid": req.params.unitsid }).then(result => {
+            if (result == null) {
+                res.json({ "status": true, "msg": "No Record found" });
+                res.end();
+            }
+            res.json({ "status": true, "msg": "Record Deletion Success" });
+            res.end();
+        }).catch(e => {
+            console.log(e)
+            res.json({ "status": false, "msg": "Record Deletion UnSuccess", "Error": e });
+            res.end();
+        })
 })
 
 var port = process.env.PORT || 3000;

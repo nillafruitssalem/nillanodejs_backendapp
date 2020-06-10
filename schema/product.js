@@ -25,7 +25,7 @@ var product = new mongoose.Schema({
     productimage: {
         type: String
     },
-    
+    productimgdet:[],
     createdon: {
         type: String,
         default: Date.now()
