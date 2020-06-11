@@ -9,6 +9,7 @@ const MongoClient = require("mongodb").MongoClient;
 // var $ = require('jquery')(require("jsdom").jsdom().parentWindow);
 // import $ from "jquery";
 // var $ = require( "jquery" );
+const jwt = require("jsonwebtoken");
 const { JSDOM } = require("jsdom");
 const { window } = new JSDOM("");
 const $ = require("jquery")(window);
@@ -27,6 +28,7 @@ app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+app.set('setsecret', process.env.SECRETECODE)
 
 const upload = require('./multerconfig');
 
@@ -74,6 +76,51 @@ app.post("/reguser", (req, res) => {
         res.end();
     })
 })
+// login
+app.post("/login", (req, res) => {
+    jwt.sign({ exp: Math.floor(Date.now() / 1000) + (60 * 60), data: req.body.emailid }, app.get('setsecret'), (e, d) => {
+        // jwt.sign(req.body.name,app.get('setsecret'),{expiresIn: Math.floor(Date.now() / 1000) + (60 * 1) },(e,d)=>{   
+        if (e) {
+            res.json({ "status": false, "Error": e });
+            res.end();
+        }
+        if (d) {
+            userschema.findOne({ "emailid": req.body.emailid, "password": req.body.password }).then(result => {
+                if (result == null) {
+                    res.json({ "status": false, "msg":"Your Are Not A User / Check your Credencials" });
+                    res.end();
+                } else {
+                    res.json({ "status": true, "Data": result, "token": d });
+                    res.end();
+                }
+            }).catch(e => {
+                // console.log(e)
+                res.json({ "status": false, "Error": e });
+                res.end();
+            })
+        }
+    })
+
+})
+
+// jwt auth
+app.use((req, res, next) => {
+    var token = req.headers['access-token']
+    if (token) {
+        jwt.verify(token, app.get('setsecret'), (err, data) => {
+            if (err) {
+                res.json({ status: false, msg: "invalid token", Error: err });
+                res.end();
+            } else {
+                next();
+            }
+        })
+    } else {
+        res.json({ status: false, msg: 'no token provided' });
+        res.end();
+    }
+})
+
 // find specific user
 app.get("/allusers/:userid", (req, res) => {
     userschema.findOne({ userid: req.params.userid }).then(result => {
@@ -153,7 +200,7 @@ app.post("/addproduct", upload.single('file'), (req, res) => {
 app.put("/updateproduct/:pid", upload.single('file'), (req, res) => {
     let myarray = [];
     myarray.push(JSON.parse(req.body.pdata));
-    console.log("updateproduct",JSON.parse(req.body.pdata))
+    console.log("updateproduct", JSON.parse(req.body.pdata))
     if (!req.file) {
         productschema.findOneAndUpdate(
             { "productid": req.params.pid },

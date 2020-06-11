@@ -10,9 +10,14 @@ var user = new mongoose.Schema({
     username: {
         type: String,
         trim: true,
+        required: true,
+        unique: true
     },
     password: {
-        type: String
+        type: String,
+        trim:true,
+        required: true,
+        unique: true
     },
     emailid: {
         type: String,
@@ -27,6 +32,12 @@ var user = new mongoose.Schema({
         required: true,
         unique: true,
         maxlength: 10
+    },
+    userrole:{
+        type:String,
+        required:true,
+        trim:true,
+        default:user
     },
     createdon: {
         type: String,
