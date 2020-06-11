@@ -37,7 +37,7 @@ var user = new mongoose.Schema({
         type:String,
         required:true,
         trim:true,
-        default:user
+        default:"user"
     },
     createdon: {
         type: String,
