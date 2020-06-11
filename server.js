@@ -20,8 +20,8 @@ const userschema = require("./schema/user.js")
 const productschema = require("./schema/product.js")
 const measureschema = require("./schema/measureunits.js")
 const orderschema = require("./schema/order.js")
-app.use(bodyparser.json());
-app.use(bodyparser.urlencoded({ extended: true }));
+app.use(bodyparser.json({limit: '50mb', extended: true}))
+app.use(bodyparser.urlencoded({limit: '50mb', extended: true}))
 app.use(cors());
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
