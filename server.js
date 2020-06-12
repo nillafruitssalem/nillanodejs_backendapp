@@ -4,15 +4,19 @@ const bodyparser = require("body-parser");
 const cors = require("cors");
 const cloudinary = require('cloudinary').v2;
 const app = express();
+app.use(bodyparser.json({limit: '50mb'}));
+app.use(bodyparser.urlencoded({extended: true }))
+app.use(cors());
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+app.set('setsecret', process.env.SECRETECODE);
+
 const path = require("path");
 const MongoClient = require("mongodb").MongoClient;
-// var $ = require('jquery')(require("jsdom").jsdom().parentWindow);
-// import $ from "jquery";
-// var $ = require( "jquery" );
 const jwt = require("jsonwebtoken");
-const { JSDOM } = require("jsdom");
-const { window } = new JSDOM("");
-const $ = require("jquery")(window);
 const nodemailer = require("nodemailer");
 const hbs = require("nodemailer-express-handlebars");
 const mongoose = require("mongoose");
@@ -20,18 +24,8 @@ const userschema = require("./schema/user.js")
 const productschema = require("./schema/product.js")
 const measureschema = require("./schema/measureunits.js")
 const orderschema = require("./schema/order.js")
-app.use(bodyparser.json({limit: '50mb', extended: true}))
-app.use(bodyparser.urlencoded({limit: '50mb', extended: true}))
-app.use(cors());
-app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
-app.set('setsecret', process.env.SECRETECODE)
-
 const upload = require('./multerconfig');
-
+const dJSON = require('dirty-json');
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -87,7 +81,7 @@ app.post("/login", (req, res) => {
         if (d) {
             userschema.findOne({ "emailid": req.body.emailid, "password": req.body.password }).then(result => {
                 if (result == null) {
-                    res.json({ "status": false, "msg":"Your Are Not A User / Check your Credencials" });
+                    res.json({ "status": false, "msg": "Your Are Not A User / Check your Credencials" });
                     res.end();
                 } else {
                     res.json({ "status": true, "Data": result, "token": d });
@@ -157,8 +151,8 @@ app.get("/allproduct", (req, res) => {
 })
 
 // add Product
-app.post("/addproduct", upload.single('file'), (req, res) => {
-    let myarray = [];
+app.post("/addproduct",upload.single('file'),(req, res) => {
+       let myarray = [];
     myarray.push(JSON.parse(req.body.pdata));
     if (!req.file) {
         res.status(500);
