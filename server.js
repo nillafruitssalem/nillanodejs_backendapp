@@ -714,7 +714,7 @@ app.delete("/deletemeasure/:unitsid", (req, res) => {
         })
 })
 
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || 8080;
 app.listen(port, (err) => {
     if (!err) {
         console.log("Port is Listening on " + port);
