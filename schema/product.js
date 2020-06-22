@@ -1,7 +1,7 @@
 
 var mongoose = require('mongoose');
 
-var product = new mongoose.Schema({
+var productschema = new mongoose.Schema({
     productid: {
         type: String,
         required: true,
@@ -32,4 +32,4 @@ var product = new mongoose.Schema({
     },
 
 })
-module.exports = mongoose.model('product', product);
+module.exports = mongoose.model('products', productschema);

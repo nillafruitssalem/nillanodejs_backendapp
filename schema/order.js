@@ -1,40 +1,50 @@
 
 var mongoose = require('mongoose');
 
-var orderdetails = new mongoose.Schema({
+var orderschema = new mongoose.Schema({
     userid: {
         type: String,
-        required: true        
+        required: true
     },
+
     orderid: {
         type: String,
-        required: true        
+        required: true
     },
     productid: {
-        type: String        
+        type: String
     },
     orderhistory: {
-        type: Boolean,        
+        type: Boolean,
         required: true
     },
     orderproductname: {
-        type: String        
+        type: String
     },
     orderproductrate: mongoose.Decimal128,
     orderproductqty: {
-        type: Number        
+        type: Number
     },
     orderproductunits: {
-        type: String        
+        type: String
     },
     orderproductimage: {
         type: String
     },
-
+    orderconform: {
+        type: Boolean,
+        required: true
+    },
     orderedon: {
         type: String,
-        default: Date.now()
+        required: true,
+        // default: Date.now()
     },
+    orderedconformdate: {
+        type: String,
+        // required: true,
+        // default: Date.now()
+    }
 
 })
-module.exports = mongoose.model('orderdetails', orderdetails);
+module.exports = mongoose.model('orders', orderschema);
