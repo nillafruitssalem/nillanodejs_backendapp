@@ -28,6 +28,9 @@ var userschema = new mongoose.Schema({
     address: {
         type: String
     },
+    location:{
+        type: String
+    },
     phonenumber: {
         type: String,
         required: true,

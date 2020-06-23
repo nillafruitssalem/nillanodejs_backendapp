@@ -55,6 +55,17 @@ app.get("/", (req, res) => {
     res.json("Connected");
     res.end();
 });
+//  show all products with out jwt token
+app.get("/allproduct_withoutauth", (req, res) => {
+    productschema.find({}).then(result => {
+        res.json({ "status": true, "Data": result });
+        res.end();
+    }).catch(e => {
+        console.log(e)
+        res.json({ "status": false, "Error": e });
+        res.end();
+    })
+})
 // register user
 app.post("/reguser", (req, res) => {
     user = new userschema({
@@ -64,6 +75,7 @@ app.post("/reguser", (req, res) => {
         emailid: req.body.emailid,
         address: req.body.address,
         phonenumber: req.body.phonenumber,
+        location: req.body.location
     })
     user.save().then(result => {
         res.json({ "status": true, "msg": "Record Insertion Success" });
@@ -670,6 +682,48 @@ app.post("/usercomplaintmail", (req, res) => {
         res.end();
     })
 })
+
+// send offer mail to customer
+app.post("/sendoffermailtocustomer", (req, res) => {
+    var allmailid = [];
+    var count = 0;
+    allmailid = req.body.toarraymail;
+
+    let fd = new Date();
+    let s = fd.getDate() + "-" + (fd.getMonth() + 1) + "-" + fd.getFullYear()
+    var text = '';
+    text += '<p>' + req.body.message + '</p>'
+
+    allmailid.forEach(async (i) => {
+        count++;
+        let transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: process.env.GMAILID,
+                pass: process.env.GMAILPASSWORD
+            }
+        });
+
+        let mailOptions = {
+            from: 'nillafruitssalem@gmail.com',
+            to: await i,
+            subject: req.body.subject + '  ' + s,
+            html: text,
+        };
+
+        await transporter.sendMail(mailOptions).then(async result => {
+            if (allmailid.length == count) {
+                return res.json({ "status": true, "msg": "Mail sent was successfully", "Data": result });
+                res.end();
+            }
+        }).catch(async e => {
+            return res.json({ "status": false, "Error": e });
+            res.end();
+        })
+
+    })
+})
+
 // add measure units
 app.post("/addmeasure", (req, res) => {
     units = new measureschema({
@@ -724,124 +778,5 @@ app.listen(port, (err) => {
 })
 
 
-// app.post("/sendmail", (req, res) => {
-
-//     let transporter = nodemailer.createTransport({
-//         service: "gmail",
-//         auth: {
-//             user: process.env.GMAILID,
-//             pass: process.env.GMAILPASSWORD
-//         }
-//     });
-
-//     let mailOptions = {
-//         from: 'nillafruitssalem@gmail.com',
-//         to: 'nillafruitssalem@gmail.com',
-//         subject: 'Testing and Testing',
-//         text: 'Hi it',
-//         // attachments: [
-//         //     { filename: 'globe.jpeg', path: './globe.jpeg' }
-//         // ],    
-//         html: '<!DOCTYPE html>' +
-//             '<html><head><title>Appointment</title>' +
-//             '</head><body id="tbody"><div>' +
-//             '<img src="http://evokebeautysalon1.herokuapp.com/main/img/logo.png" alt="" width="160">' +
-//             '<p>Thank you for your appointment.</p>' +
-//             '<p>Here is summery:</p>' +
-//             '<p>Name: James Falcon</p>' +
-//             '<p>Date: Feb 2, 2017</p>' +
-//             '<p>Package: Hair Cut </p>' +
-//             '<p>Arrival time: 4:30 PM</p>' +
-//             '</div></body></html>'
-//         // html:'<div class="container"> <table class="table"> <thead> <tr> <th>Firstname</th><th>Lastname</th> <th>Email</th></tr></thead><tbody id="tbody"></tbody></table></div>'    
-
-//     };
-
-//     transporter.sendMail(mailOptions, (err, result) => {
-//         if (err) {
-//             console.log(err);
-//         }
-//         if (result) {
-//             console.log("Email send", result)
-//         }
-//     })
-// })
-
-
-// app.post("/addorder/:pid", (req, res) => {
-//     // console.log(req.body)
-//     let userdetail;
-//     productschema.findOne({ "productid": req.params.pid }).then(result => {
-//         console.log("reuslt order", result)
-//         if (result.productqty == 0) {
-//             res.json({ "status": false, "msg": "out of stock please update product quatity" });
-//             res.end();
-//             return;
-//         }
-//         else {
-//             if (result.productqty >= req.body.orderqty) {
-//                 totalqty = 0;
-//                 totalqty = result.productqty - req.body.orderqty
-//                 console.log(totalqty)
-//                 userschema.findOne({ "userid": req.body.userid }).then(user => {
-//                     console.log(res)
-//                     userdetail =  user;
-//                 })
-//                 productschema.findOneAndUpdate(
-//                     { "productid": result.productid },
-//                     { "productqty": totalqty })
-//                     .then(result => {
-//                         console.log(result)
-//                         let fd = new Date();
-//                         let s = fd.getDate() + "-" + (fd.getMonth() + 1) + "-" + fd.getFullYear()
-
-//                         order = new orderschema({
-//                             userid: req.body.userid,
-//                             orderid: (req.body.userid).substring(0, 6) + Date.now(),
-//                             productid: req.params.pid,
-//                             orderhistory: req.body.orderhistory,
-//                             orderproductname: result.productname,
-//                             orderproductrate: result.productrate,
-//                             orderproductunits: result.productunits,
-//                             orderproductqty: req.body.orderqty,
-//                             orderproductimage: result.productimage,
-//                             orderconform: false,
-//                             orderedon: s,
-//                             _userinfo: userdetail
-//                         })
-//                         order.save().then(result => {
-//                             res.json({ "status": true, "msg": "Order added  Success" });
-//                             res.end();
-//                         }).catch(e => {
-//                             console.log(e)
-//                             res.json({ "status": false, "msg": "Unable to add the Order UnSuccess", "Error": e });
-//                             res.end();
-//                             return
-//                         })
-
-
-//                     }).catch(e => {
-//                         console.log(e)
-//                         res.json({ "status": false, "msg": "Error on add order", "Error": e });
-//                         res.end();
-//                     })
-//             }
-//             if (result.productqty < req.body.orderqty) {
-//                 res.json({ "status": false, "msg": "sorry we dont have higher quatity" });
-//                 res.end();
-//             }
-//         }
-//     })
-// })
-
-// transporter.sendMail(mailOptions, (err, result) => {
-//     if (err) {
-//         console.log(err);
-//     }
-//     if (result) {
-//         console.log("Email send", result)
-//     }
-
-// })
 
 
