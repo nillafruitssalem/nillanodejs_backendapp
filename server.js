@@ -334,16 +334,16 @@ app.post("/addorder_user/:pid", (req, res) => {
 
 
 
-app.get("/allorderconformdetails/:orderdate", (req, res) => {
+app.get("/allorderconformdetails/:orderdate", async (req, res) => {
     orderschema.find({ "orderedon": req.params.orderdate, "orderhistory": true, "orderconform": false })
-        .then(result => {
+        .then(async result => {
             // console.log("admin orders", result) 
             if (result == null) {
                 res.json({ "status": true, "msg": "No Record found" });
                 res.end();
             } else {
 
-                res.json({ "status": true, "Data": result });
+                res.json({ "status": true, "Data": await result });
                 res.end();
             }
         }).catch(e => {
@@ -464,6 +464,7 @@ app.get("/usercancelorder/:orderid", (req, res) => {
 
 // conform order
 app.post("/conformorder", async (req, res) => {
+    var updatenode = false;
     var count = 0;
     // console.log(req.body);
     var orderarray = req.body.order;
@@ -490,10 +491,10 @@ app.post("/conformorder", async (req, res) => {
                                 { "productid": await i.productid },
                                 { "productqty": totalqty }
                             ).then(() => {
+                                if (orderarray.length == count) {
+                                    updatenode = true;
 
-                                if (orderarray.length == count)
-                                    return res.json({ "status": true, "msg": "order conformed" });
-                                res.end();
+                                }
                             })
                                 .catch(e => {
                                     console.log("error on product schema findone and update", e)
@@ -508,10 +509,14 @@ app.post("/conformorder", async (req, res) => {
                                 { "userid": await i.userid, "orderid": await i.orderid, "productid": await i.productid, "orderedon": await i.orderedon, "orderhistory": await i.orderhistory },
                                 { "orderconform": false }) //updating here
                                 .then(async () => {
-                                    return; res.json({ "status": true, "msg": "check your qty" });
+                                    return res.json({ "status": true, "msg": "check your qty" });
                                     res.end();
 
                                 })
+                        }
+                        if (updatenode == true) {
+                            return res.json({ "status": true, "msg": "order conformed" });
+                            res.end();
                         }
 
                     })
@@ -576,37 +581,45 @@ app.post("/customerordermail", (req, res) => {
     text += "<thead>"
     text += "<tr>"
     text += "<th>Orderid</th>"
+    text += "<th>Product Image</th>"
     text += "<th>Product Name</th>"
     text += "<th>Rate</th>"
     text += "<th>Quantity</th>"
     text += "<th>Units</th>"
     text += "<th>Ordered On</th>"
+    text += "<th>Subtotal</th>"
     text += "</tr>"
     text += "</thead>"
     for (i = 0; i < mydata.length; i++) {
-        total += parseFloat(mydata[i].orderproductrate.$numberDecimal)
+        // console.log(mydata)
+        let subtotal = parseFloat(mydata[i].orderproductrate.$numberDecimal) * parseFloat(mydata[i].orderproductqty)
+        total += subtotal;
         text += "<tr>"
         text += "<td>" + mydata[i].orderid + "</td>"
+        text += "<td><img src="+mydata[i].orderproductimage+" width='50' height='50'/></td>"
         text += "<td>" + mydata[i].orderproductname + "</td>"
         text += "<td>" + mydata[i].orderproductrate.$numberDecimal + "</td>"
         text += "<td>" + mydata[i].orderproductqty + "</td>"
         text += "<td>" + mydata[i].orderproductunits + "</td>"
         text += "<td>" + mydata[i].orderedon + "</td>"
+        text += "<td><b><span>&#8377;</span>" + subtotal + "<b></td>"
         text += "</tr>"
     }
     text += "<tfoot>"
     text += "<td>" + '' + "</td>"
-    text += "<td>" + "Total" + "</td>"
-    text += "<td>" + total + "</td>"
     text += "<td>" + '' + "</td>"
     text += "<td>" + '' + "</td>"
     text += "<td>" + '' + "</td>"
+    text += "<td>" + '' + "</td>"
+    text += "<td>" + '' + "</td>"
+    text += "<td>" + "Grand Total" + "</td>"
+    text += "<td><b><span>&#8377;</span>" + total + "<b></td>"
     text += "</tfoot>"
     text += "</table>"
     text += "<br>"
     text += "<br>"
     text += "<label>Total : </label>"
-    text += " <input type='text' readonly value=" + total + "><br>"
+    text += " <b><span>&#8377;</span><b><input type='text' readonly value="+total + "><b><br>"
     text += "<label>Cash Type : </label>"
     text += " <input type='text' readonly value='Cash on Delivery'><br>"
     text += "<div class='a'>"
